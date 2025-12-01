@@ -1,0 +1,72 @@
+import '../../domain/models/loan_application.dart';
+import '../../domain/models/loan_exceptions.dart';
+import '../../domain/models/loan_guarantor.dart';
+import '../../domain/models/rollover_request.dart';
+import '../../domain/models/rollover_eligibility.dart';
+
+/// Interface for loan operations
+abstract class LoanServiceInterface {
+  /// Submit a new loan application
+  /// 
+  /// Returns [LoanApplicationResponse] with the loan ID
+  /// 
+  /// Throws [LoanRolloverException] if submission fails
+  Future<LoanApplicationResponse> submitLoanApplication(LoanApplication application);
+
+  /// Get list of active loans for a user
+  /// 
+  /// Returns list of active loans
+  /// 
+  /// Throws [LoanRolloverException] if retrieval fails
+  Future<List<dynamic>> getActiveLoans(String userId);
+
+  /// Check if a loan is eligible for rollover
+  /// 
+  /// Returns [RolloverEligibility] with eligibility details and requirements
+  /// 
+  /// Throws [LoanRolloverException] if check fails
+  Future<RolloverEligibility> checkRolloverEligibility(String loanId);
+
+  /// Get list of guarantors for a loan
+  /// 
+  /// Returns list of [LoanGuarantor]
+  /// 
+  /// Throws [LoanRolloverException] if retrieval fails
+  Future<List<LoanGuarantor>> getLoanGuarantors(String loanId);
+
+  /// Create a new rollover request
+  /// 
+  /// Returns created [RolloverRequest]
+  /// 
+  /// Throws [LoanRolloverException] if creation fails
+  Future<RolloverRequest> createRolloverRequest({
+    required String oldLoanId,
+    required String userId,
+    required double newLoanAmount,
+    required int newTenureMonths,
+  });
+
+  /// Approve a rollover request as a guarantor
+  /// 
+  /// Returns updated [RolloverRequest]
+  /// 
+  /// Throws [LoanRolloverException] if approval fails
+  Future<RolloverRequest> approveRollover({
+    required String requestId,
+    required String guarantorId,
+  });
+
+  /// Get rollover history for a user
+  /// 
+  /// Returns list of [RolloverRequest]
+  /// 
+  /// Throws [LoanRolloverException] if retrieval fails
+  Future<List<RolloverRequest>> getRolloverHistory(String userId);
+
+  /// Get pending rollover requests for a guarantor
+  /// 
+  /// Returns list of [RolloverRequest]
+  /// 
+  /// Throws [LoanRolloverException] if retrieval fails
+  Future<List<RolloverRequest>> getPendingRolloverRequests(String guarantorId);
+}
