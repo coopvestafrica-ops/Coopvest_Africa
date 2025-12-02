@@ -1,0 +1,705 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../domain/models/loan_service_interface.dart';
+import '../../domain/models/rollover_eligibility.dart';
+import '../../domain/models/loan_guarantor.dart';
+import '../../domain/models/rollover_request.dart';
+import '../../domain/models/loan_application.dart' show LoanApplication;
+import '../../domain/models/loan_submission_result.dart';
+import '../../domain/exceptions/loan_exceptions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+importclass LoanRolloverService implements LoanServiceInterface {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _loanCache = _LoanCache();
+
+  /// Rate limiter for rollover operations
+  final _rolloverRateLimit = _RateLimit(
+    interval: Duration(minutes: 5),
+    maxRequests: 3,
+  );
+
+  /// Rate limiter for approvals
+  final _approvalRateLimit = _RateLimit(
+    interval: Duration(minutes: 1),
+    maxRequests: 5,
+  );
+  
+  /// Additional percentage required per 6 months of tenure
+  static const double _additionalPercentagePerTenure = 5.0;els/loan_service_interface.dart';
+import '../../domain/models/rollover_eligibility.dart';
+import '../../domain/models/loan_guarantor.dart';
+import '../../domain/models/rollover_request.dart';
+import '../../domain/models/loan_application.dart' show LoanApplication;
+import '../../domain/models/loan_submission_result.dart';
+import '../../domain/exceptions/loan_exceptions.dart';
+
+/// Cache management for loan details
+class _LoanCache {
+  final Map<String, ({
+    Map<String, dynamic> data,
+    DateTime timestamp
+  })> _cache = {};
+  
+  static const _cacheDuration = Duration(minutes: 5);
+  
+  void set(String key, Map<String, dynamic> data) {
+    _cache[key] = (
+      data: data,
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic>? get(String key) {
+    final entry = _cache[key];
+    if (entry == null || 
+        DateTime.now().difference(entry.timestamp) >= _cacheDuration) {
+      _cache.remove(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  void remove(String key) => _cache.remove(key);
+}
+
+/// Rate limiting configuration
+class _RateLimit {
+  final Duration interval;
+  final int maxRequests;
+  final Map<String, List<DateTime>> _requestTimes = {};
+
+  _RateLimit({
+    required this.interval,
+    required this.maxRequests,
+  });
+
+  bool checkAndRecord(String key) {
+    final now = DateTime.now();
+    final times = _requestTimes[key] ?? [];
+    times.removeWhere((time) => now.difference(time) > interval);
+    
+    if (times.length >= maxRequests) {
+      return false;
+    }
+
+    times.add(now);
+    _requestTimes[key] = times;
+    return true;
+  }
+}
+
+/// Implementation of loan rollover service using Firestore
+/// 
+/// Required Firestore indices:
+/// 1. loan_payments:
+///    - Collection: loan_payments
+///    - Fields to index: loanId Ascending, date Descending
+///
+/// 2. guarantees:
+///    - Collection: guarantees
+///    - Fields to index: loanId Ascending, status Ascending
+///
+/// 3. rollover_requests (for history):
+///    - Collection: rollover_requests
+///    - Fields to index: userId Ascending, createdAt Descending
+///
+/// 4. rollover_requests (for pending):
+///    - Collection: rollover_requests
+///    - Fields to index: status Ascending, createdAt Descending
+///    - Array contains field: guarantors
+class LoanRolloverService implements LoanServiceInterface {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _loanCache = _LoanCache();
+
+  /// Rate limiter for rollover operations
+  final _rolloverRateLimit = _RateLimit(
+    interval: Duration(minutes: 5),
+    maxRequests: 3,
+  );
+
+  /// Rate limiter for approvals
+  final _approvalRateLimit = _RateLimit(
+    interval: Duration(minutes: 1),
+    maxRequests: 5,
+  );
+
+  /// Percentage increase in required payment per 6 months of tenure
+  static const double _additionalPercentagePerTenure = 5.0;
+  
+  @override
+  Future<LoanSubmissionResult> submitLoanApplication(LoanApplication application) async {
+    throw LoanRolloverException('LoanRolloverService does not support submitting new loan applications. Please use LoanService instead.');
+  }
+
+  @override
+  Future<bool> validateLoanApplication(LoanApplication application) async {
+    throw LoanRolloverException('LoanRolloverService does not support validating loan applications. Please use LoanService instead.');
+  }
+
+  @override 
+  Future<void> updateLoanStatus({
+    required String loanId,
+    required String status,
+    String? remarks,
+  }) async {
+    try {
+      await _firestore.collection('loans').doc(loanId).update({
+        'status': status,
+        'lastUpdated': FieldValue.serverTimestamp(),
+        if (remarks != null) 'statusRemarks': remarks,
+      });
+    } catch (e) {
+      throw LoanRolloverException('Failed to update loan status: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> cancelRolloverRequest(String requestId) async {
+    try {
+      final requestDoc = await _firestore.collection('rollover_requests').doc(requestId).get();
+      
+      if (!requestDoc.exists) {
+        throw NotFoundException('Rollover request not found');
+      }
+
+      final requestData = requestDoc.data()!;
+      if (requestData['status'] != 'pending') {
+        throw ValidationException('Only pending requests can be cancelled');
+      }
+
+      await requestDoc.reference.update({
+        'status': 'cancelled',
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      if (e is LoanException) rethrow;
+      throw LoanRolloverException('Failed to cancel rollover request: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<RolloverEligibility> checkRolloverEligibility(String loanId) async {
+    try {
+      final loanDoc = await _firestore.collection('loans').doc(loanId).get();
+      
+      if (!loanDoc.exists) {
+        return RolloverEligibility(
+          isEligible: false,
+          message: 'Loan not found'
+        );
+      }
+
+      final loanData = loanDoc.data()!;
+      final double totalAmount = (loanData['amount'] as num?)?.toDouble() ?? 0.0;
+      final double amountPaid = (loanData['amountPaid'] as num?)?.toDouble() ?? 0.0;
+      final String status = loanData['status'] as String? ?? '';
+
+      // Check if loan is active
+      if (status != 'active') {
+        return RolloverEligibility(
+          isEligible: false,
+          message: 'Only active loans can be rolled over'
+        );
+      }
+
+      // Calculate payment percentage
+      final paymentPercentage = (amountPaid / totalAmount) * 100;
+
+      // Check if minimum payment percentage is met
+      if (paymentPercentage < LoanServiceInterface.minPaymentPercentageForRollover) {
+        return RolloverEligibility(
+          isEligible: false,
+          message: 'Must pay at least ${LoanServiceInterface.minPaymentPercentageForRollover}% of current loan '
+            '(Current: ${paymentPercentage.toStringAsFixed(1)}%)'
+        );
+      }
+
+      // Check payment history
+      final payments = await _firestore
+          .collection('loan_payments')
+          .where('loanId', isEqualTo: loanId)
+          .orderBy('date', descending: true)
+          .limit(3)
+          .get();
+
+      // Check for any missed payments in last 3 payments
+      bool hasMissedPayments = payments.docs.any((doc) => doc.data()['status'] == 'missed');
+      if (hasMissedPayments) {
+        return RolloverEligibility(
+          isEligible: false,
+          message: 'Must have good payment history with no missed payments'
+        );
+      }
+
+      // Calculate available tenures based on payment history
+      final availableTenures = LoanServiceInterface.validTenureMonths.where((tenure) => 
+        paymentPercentage >= LoanServiceInterface.minPaymentPercentageForRollover + 
+          ((tenure - LoanServiceInterface.validTenureMonths.first) / 6) * _additionalPercentagePerTenure
+      ).toList();
+
+      final maxAmount = totalAmount * (1 + LoanServiceInterface.maxLoanIncreasePercentage / 100);
+
+      return RolloverEligibility(
+        isEligible: true,
+        message: 'Eligible for rollover',
+        maxAmount: maxAmount,
+        availableTenures: availableTenures,
+        requirements: {
+          'currentAmount': totalAmount,
+          'amountPaid': amountPaid,
+          'remainingAmount': totalAmount - amountPaid,
+          'paymentPercentage': paymentPercentage,
+          'minPaymentRequired': LoanServiceInterface.minPaymentPercentageForRollover,
+          'additionalPerTenure': _additionalPercentagePerTenure,
+        }
+      );
+    } catch (e) {
+      throw LoanRolloverException(
+        'Error checking eligibility: ${e.toString()}'
+      );
+    }
+  }
+
+  @override
+  Future<List<LoanGuarantor>> getLoanGuarantors(String loanId) async {
+    try {
+      final guarantorDocs = await _firestore
+          .collection('guarantees')
+          .where('loanId', isEqualTo: loanId)
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      if (guarantorDocs.docs.isEmpty) {
+        return [];
+      }
+
+      // Get all guarantor IDs and create a batch get for user data
+      final guarantorIds = guarantorDocs.docs
+          .map((doc) => doc.data()['guarantorId'] as String)
+          .toSet();
+
+      final usersData = await Future.wait(
+        guarantorIds.map((id) => _firestore.collection('users').doc(id).get())
+      );
+
+      // Create a map of user data for quick lookup
+      final userDataMap = Map.fromEntries(
+        usersData.where((doc) => doc.exists).map((doc) => 
+          MapEntry(doc.id, doc.data()!)
+        )
+      );
+
+      // Build guarantor list with user data
+      return guarantorDocs.docs.where((doc) {
+        final guarantorId = doc.data()['guarantorId'] as String;
+        return userDataMap.containsKey(guarantorId);
+      }).map((doc) {
+        final guarantee = doc.data();
+        final userData = userDataMap[guarantee['guarantorId']]!;
+
+        return LoanGuarantor(
+          id: doc.id,
+          userId: guarantee['guarantorId'] as String,
+          fullName: '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim(),
+          membershipId: userData['membershipId'] as String? ?? '',
+          guaranteedAmount: (guarantee['amount'] as num?)?.toDouble() ?? 0.0,
+          guaranteedAt: (guarantee['createdAt'] as Timestamp).toDate(),
+          status: guarantee['status'] as String? ?? 'active'
+        );
+      }).toList();
+    } catch (e) {
+      throw LoanRolloverException('Error getting guarantors: $e');
+    }
+  }
+
+  @override
+  Future<RolloverRequest> createRolloverRequest({
+    required String oldLoanId,
+    required String userId,
+    required double newLoanAmount,
+    required int newTenureMonths,
+  }) async {
+    try {
+      // Check rate limit
+      if (!_rolloverRateLimit.checkAndRecord(userId)) {
+        throw ValidationException(
+          'Too many rollover requests. Please wait before trying again.',
+          code: 'RATE_LIMIT_EXCEEDED'
+        );
+      }
+
+      // Validate input parameters
+      if (newLoanAmount <= 0) {
+        throw ValidationException(
+          'New loan amount must be greater than zero',
+          code: 'INVALID_AMOUNT'
+        );
+      }
+      if (!LoanServiceInterface.validTenureMonths.contains(newTenureMonths)) {
+        throw ValidationException(
+          'Invalid tenure months. Must be one of: ${LoanServiceInterface.validTenureMonths.join(", ")} months',
+          code: 'INVALID_TENURE'
+        );
+      }
+
+      // Verify eligibility first
+      final eligibility = await checkRolloverEligibility(oldLoanId);
+      if (!eligibility.isEligible) {
+        throw LoanRolloverException(eligibility.message);
+      }
+
+      // Validate against eligibility criteria
+      if (newLoanAmount > (eligibility.maxAmount ?? 0)) {
+        throw LoanRolloverException(
+          'New loan amount (${newLoanAmount.toStringAsFixed(2)}) exceeds ' 
+          'maximum allowed amount (${eligibility.maxAmount?.toStringAsFixed(2)})'
+        );
+      }
+      if (!eligibility.availableTenures!.contains(newTenureMonths)) {
+        throw LoanRolloverException(
+          'Selected tenure ($newTenureMonths months) is not available. '
+          'Available options: ${eligibility.availableTenures!.join(", ")} months'
+        );
+      }
+
+      // Get current loan info
+      final oldLoanDoc = await _firestore.collection('loans').doc(oldLoanId).get();
+      if (!oldLoanDoc.exists) {
+        throw LoanRolloverException('Original loan not found');
+      }
+
+      final oldLoanData = oldLoanDoc.data()!;
+      final double remainingAmount = (oldLoanData['amount'] as num).toDouble() - 
+        ((oldLoanData['amountPaid'] as num?)?.toDouble() ?? 0.0);
+
+      // Get current guarantors
+      final guarantors = await getLoanGuarantors(oldLoanId);
+      if (guarantors.isEmpty) {
+        throw LoanRolloverException('No active guarantors found for this loan');
+      }
+
+      // Create rollover request
+      final now = DateTime.now();
+      final rolloverRequestRef = await _firestore.collection('rollover_requests').add({
+        'oldLoanId': oldLoanId,
+        'userId': userId,
+        'newLoanAmount': newLoanAmount,
+        'remainingAmount': remainingAmount,
+        'newTenureMonths': newTenureMonths,
+        'status': 'pending',
+        'guarantors': guarantors.map((g) => g.toMap()).toList(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'approvalCount': 0,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+
+      return RolloverRequest(
+        id: rolloverRequestRef.id,
+        oldLoanId: oldLoanId,
+        userId: userId,
+        newLoanAmount: newLoanAmount,
+        newTenureMonths: newTenureMonths,
+        status: 'pending',
+        createdAt: now,
+        approvedGuarantors: [],
+        metadata: {
+          'remainingAmount': remainingAmount,
+          'guarantorsCount': guarantors.length
+        }
+      );
+    } catch (e) {
+      throw LoanRolloverException('Failed to create rollover request: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<RolloverRequest> approveRollover({
+    required String requestId,
+    required String guarantorId,
+  }) async {
+    try {
+      // Check rate limit
+      if (!_approvalRateLimit.checkAndRecord(guarantorId)) {
+        throw ValidationException(
+          'Too many approval attempts. Please wait before trying again.',
+          code: 'RATE_LIMIT_EXCEEDED'
+        );
+      }
+
+      return await _firestore.runTransaction<RolloverRequest>((transaction) async {
+        final requestDoc = await transaction.get(
+          _firestore.collection('rollover_requests').doc(requestId)
+        );
+
+        if (!requestDoc.exists) {
+          throw NotFoundException(
+            'Rollover request not found',
+            code: 'REQUEST_NOT_FOUND'
+          );
+        }
+
+        final requestData = requestDoc.data()!;
+        
+        if (requestData['status'] != 'pending') {
+          throw ValidationException(
+            'This rollover request is no longer pending',
+            code: 'INVALID_STATUS'
+          );
+        }
+
+        final guarantors = List<Map<String, dynamic>>.from(requestData['guarantors']);
+        
+        // Find and update guarantor approval
+        final guarantorIndex = guarantors.indexWhere((g) => g['guarantorId'] == guarantorId);
+        if (guarantorIndex == -1) {
+          throw NotFoundException(
+            'Guarantor not found for this loan',
+            code: 'GUARANTOR_NOT_FOUND'
+          );
+        }
+
+        if (guarantors[guarantorIndex]['approvedRollover'] == true) {
+          throw ValidationException(
+            'Already approved',
+            code: 'ALREADY_APPROVED'
+          );
+        }
+
+        // Update guarantor approval
+        guarantors[guarantorIndex]['approvedRollover'] = true;
+        final approvedGuarantors = guarantors
+          .where((g) => g['approvedRollover'] == true)
+          .map((g) => g['guarantorId'] as String)
+          .toList();
+        final newApprovalCount = approvedGuarantors.length;
+
+        // Update request document
+        final now = DateTime.now();
+        transaction.update(requestDoc.reference, {
+          'guarantors': guarantors,
+          'approvalCount': newApprovalCount,
+          'lastUpdated': FieldValue.serverTimestamp(),
+          'approvedGuarantors': approvedGuarantors,
+        });
+
+        // Create basic request object with current state
+        final request = RolloverRequest(
+          id: requestId,
+          oldLoanId: requestData['oldLoanId'] as String,
+          userId: requestData['userId'] as String,
+          newLoanAmount: (requestData['newLoanAmount'] as num).toDouble(),
+          newTenureMonths: (requestData['newTenureMonths'] as num).toInt(),
+          status: 'pending',
+          createdAt: (requestData['createdAt'] as Timestamp).toDate(),
+          approvedGuarantors: approvedGuarantors,
+          metadata: {
+            'remainingAmount': (requestData['remainingAmount'] as num).toDouble(),
+            'approvalCount': newApprovalCount,
+            'totalRequired': guarantors.length,
+            'lastUpdated': now,
+          }
+        );
+
+        // If all guarantors approved, process the rollover
+        if (newApprovalCount == guarantors.length) {
+          await _processApprovedRollover(
+            transaction,
+            requestDoc,
+            request.userId,
+            request.newLoanAmount,
+            request.newTenureMonths
+          );
+          
+          // Return updated request with completed status
+          return request.copyWith(
+            status: 'completed',
+            metadata: {
+              ...request.metadata ?? {},
+              'completedAt': now,
+            }
+          );
+        }
+
+        return request;
+      });
+    } catch (e) {
+      throw LoanRolloverException('Failed to approve rollover: ${e.toString()}');
+    }
+  }
+
+  Future<void> _processApprovedRollover(
+    Transaction transaction,
+    DocumentSnapshot requestDoc,
+    String userId,
+    double newLoanAmount,
+    int newTenureMonths,
+  ) async {
+    try {
+      final requestData = requestDoc.data() as Map<String, dynamic>;
+      final oldLoanId = requestData['oldLoanId'] as String;
+      final remainingAmount = (requestData['remainingAmount'] as num).toDouble();
+
+      // Validate amounts
+      if (remainingAmount <= 0 || newLoanAmount <= remainingAmount) {
+        throw ValidationException(
+          'Invalid loan amounts for rollover',
+          code: 'INVALID_AMOUNTS'
+        );
+      }
+
+      // Get current loan document
+      final oldLoanDoc = await transaction.get(
+        _firestore.collection('loans').doc(oldLoanId)
+      );
+      
+      if (!oldLoanDoc.exists) {
+        throw NotFoundException(
+          'Original loan not found',
+          code: 'LOAN_NOT_FOUND'
+        );
+      }
+
+      // Verify loan status
+      final oldLoanData = oldLoanDoc.data() as Map<String, dynamic>;
+      if (oldLoanData['status'] != 'active') {
+        throw ValidationException(
+          'Original loan is no longer active',
+          code: 'INVALID_LOAN_STATUS'
+        );
+      }
+
+      // Create new loan document
+      final newLoanRef = _firestore.collection('loans').doc();
+      final now = DateTime.now();
+      
+      final newLoanData = {
+        'userId': userId,
+        'amount': newLoanAmount,
+        'remainingFromPrevious': remainingAmount,
+        'previousLoanId': oldLoanId,
+        'status': 'active',
+        'tenureMonths': newTenureMonths,
+        'startDate': now,
+        'endDate': now.add(Duration(days: 30 * newTenureMonths)),
+        'amountPaid': 0.0,
+        'isRollover': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      };
+
+      // Update old loan status
+      transaction.update(oldLoanDoc.reference, {
+        'status': 'rolled_over',
+        'rolledOverTo': newLoanRef.id,
+        'rolledOverAt': FieldValue.serverTimestamp(),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+
+      // Create new loan
+      transaction.set(newLoanRef, newLoanData);
+
+      // Update request status
+      transaction.update(requestDoc.reference, {
+        'status': 'completed',
+        'completedAt': FieldValue.serverTimestamp(),
+        'newLoanId': newLoanRef.id,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw LoanRolloverException('Failed to process rollover: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<List<RolloverRequest>> getRolloverHistory(String userId) async {
+    try {
+      final requests = await _firestore
+          .collection('rollover_requests')
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return Future.wait(requests.docs.map((doc) async {
+        final data = doc.data();
+        final oldLoanDoc = await _firestore
+            .collection('loans')
+            .doc(data['oldLoanId'])
+            .get();
+
+        final approvedGuarantors = (data['guarantors'] as List<dynamic>)
+          .where((g) => g['approvedRollover'] == true)
+          .map((g) => g['guarantorId'] as String)
+          .toList();
+
+        return RolloverRequest(
+          id: doc.id,
+          oldLoanId: data['oldLoanId'] as String,
+          userId: data['userId'] as String,
+          newLoanAmount: (data['newLoanAmount'] as num).toDouble(),
+          newTenureMonths: (data['newTenureMonths'] as num).toInt(),
+          status: data['status'] as String,
+          createdAt: (data['createdAt'] as Timestamp).toDate(),
+          approvedGuarantors: approvedGuarantors,
+          metadata: {
+            'remainingAmount': (data['remainingAmount'] as num).toDouble(),
+            'approvalCount': (data['approvalCount'] as num?)?.toInt() ?? 0,
+            'newLoanId': data['newLoanId'] as String?,
+            'completedAt': data['completedAt'] != null 
+              ? (data['completedAt'] as Timestamp).toDate()
+              : null,
+            if (oldLoanDoc.exists) 'oldLoanStatus': oldLoanDoc.data()?['status'],
+          }..removeWhere((_, v) => v == null),
+        );
+      }).toList());
+    } catch (e) {
+      throw LoanRolloverException('Error getting rollover history: $e');
+    }
+  }
+
+  @override
+  Future<List<RolloverRequest>> getPendingRolloverRequests(String guarantorId) async {
+    try {
+      final requests = await _firestore
+          .collection('rollover_requests')
+          .where('status', isEqualTo: 'pending')
+          .where('guarantors', arrayContains: {'guarantorId': guarantorId})
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return Future.wait(requests.docs.map((doc) async {
+        final data = doc.data();
+        final borrower = await _firestore
+            .collection('users')
+            .doc(data['userId'])
+            .get();
+
+        final approvedGuarantors = (data['guarantors'] as List<dynamic>)
+          .where((g) => g['approvedRollover'] == true)
+          .map((g) => g['guarantorId'] as String)
+          .toList();
+
+        return RolloverRequest(
+          id: doc.id,
+          oldLoanId: data['oldLoanId'] as String,
+          userId: data['userId'] as String,
+          newLoanAmount: (data['newLoanAmount'] as num).toDouble(),
+          newTenureMonths: (data['newTenureMonths'] as num).toInt(),
+          status: data['status'] as String,
+          createdAt: (data['createdAt'] as Timestamp).toDate(),
+          approvedGuarantors: approvedGuarantors,
+          metadata: {
+            'borrowerName': borrower.exists 
+              ? '${borrower.data()?['firstName'] ?? ''} ${borrower.data()?['lastName'] ?? ''}'.trim()
+              : 'Unknown',
+            'remainingAmount': (data['remainingAmount'] as num).toDouble(),
+            'approvalCount': (data['approvalCount'] as num?)?.toInt() ?? 0,
+            'totalGuarantors': (data['guarantors'] as List).length,
+            'hasApproved': approvedGuarantors.contains(guarantorId),
+          },
+        );
+      }).toList());
+    } catch (e) {
+      throw LoanRolloverException('Error getting pending rollover requests: $e');
+    }
+  }
+}
