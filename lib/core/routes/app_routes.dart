@@ -15,6 +15,19 @@ abstract class AppRoutes {
   static const String loan = '/loan';
   static const String savings = '/savings';
   static const String wallet = '/wallet';
+  
+  // NEW ROUTES - Previously orphaned screens
+  static const String guarantorLoan = '/guarantor-loan';
+  static const String guarantorScan = '/guarantor-scan';
+  static const String loanQrConfirmation = '/loan-qr-confirmation';
+  static const String myGuarantees = '/my-guarantees';
+  static const String referral = '/referral';
+  static const String loanStatus = '/loan-status';
+  static const String rolloverApproval = '/rollover-approval';
+  static const String tickets = '/tickets';
+  static const String createTicket = '/ticket/create';
+  static const String ticketDetail = '/ticket/detail';
+  static const String salaryConsent = '/salary-consent';
 }
 
 /// Route generator with lazy loading
@@ -103,6 +116,84 @@ class AppRouteGenerator {
       case AppRoutes.wallet:
         return _LazyLoadScreen(
           screenBuilder: () => ScreenLoader.loadWalletScreen(userId: userId),
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      // NEW ROUTES - Previously orphaned screens
+      case AppRoutes.guarantorLoan:
+        return _LazyLoadScreen(
+          screenBuilder: ScreenLoader.loadGuarantorLoanScreen,
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.guarantorScan:
+        return _LazyLoadScreen(
+          screenBuilder: ScreenLoader.loadGuarantorScanScreen,
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.loanQrConfirmation:
+        return _LazyLoadScreen(
+          screenBuilder: () => ScreenLoader.loadLoanQrConfirmationScreen(loanId: userId),
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.myGuarantees:
+        return _LazyLoadScreen(
+          screenBuilder: () => ScreenLoader.loadMyGuaranteesScreen(userId: userId),
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.referral:
+        return _LazyLoadScreen(
+          screenBuilder: () => ScreenLoader.loadReferralScreen(userId: userId),
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.loanStatus:
+        return _LazyLoadScreen(
+          screenBuilder: () => ScreenLoader.loadLoanStatusScreen(loanId: userId),
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.rolloverApproval:
+        return _LazyLoadScreen(
+          screenBuilder: () => ScreenLoader.loadRolloverApprovalScreen(loanId: userId),
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.tickets:
+        return _LazyLoadScreen(
+          screenBuilder: ScreenLoader.loadTicketListScreen,
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.createTicket:
+        return _LazyLoadScreen(
+          screenBuilder: ScreenLoader.loadCreateTicketScreen,
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.ticketDetail:
+        return _LazyLoadScreen(
+          screenBuilder: () => ScreenLoader.loadTicketDetailScreen(ticketId: userId),
+          requiresAuth: true,
+          isAuthenticated: isAuthenticated,
+        );
+
+      case AppRoutes.salaryConsent:
+        return _LazyLoadScreen(
+          screenBuilder: ScreenLoader.loadSalaryConsentScreen,
           requiresAuth: true,
           isAuthenticated: isAuthenticated,
         );
