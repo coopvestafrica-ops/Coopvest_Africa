@@ -9,7 +9,7 @@ import '../../splash_screen.dart' deferred as splash;
 import '../../onboarding_screen.dart' deferred as onboarding;
 import '../../login_screen.dart' deferred as login;
 import '../../signup_screen.dart' deferred as signup;
-import '../../../lib/features/dashboard/presentation/screens/dashboard_screen.dart' deferred as dashboard;
+import '../../features/dashboard/presentation/screens/dashboard_screen.dart' deferred as dashboard;
 import '../../contribution_screen.dart' deferred as contribution;
 import '../../loan_application_screen.dart' deferred as loan;
 import '../../savings_screen.dart' deferred as savings;
@@ -21,11 +21,11 @@ import '../../guarantor_scan_screen.dart' deferred as guarantor_scan;
 import '../../loan_qr_confirmation_screen.dart' deferred as loan_qr;
 import '../../my_guarantees_screen.dart' deferred as my_guarantees;
 import '../../referral_screen.dart' deferred as referral;
-import '../../../lib/features/loan/presentation/screens/loan_status_screen.dart' deferred as loan_status;
-import '../../../lib/features/loan/presentation/screens/rollover_approval_screen.dart' deferred as rollover;
-import '../../../lib/features/tickets/presentation/screens/ticket_list_screen.dart' deferred as ticket_list;
-import '../../../lib/features/tickets/presentation/screens/create_ticket_screen.dart' deferred as create_ticket;
-import '../../../lib/features/tickets/presentation/screens/ticket_detail_screen.dart' deferred as ticket_detail;
+import '../../features/loan/presentation/screens/loan_status_screen.dart' deferred as loan_status;
+import '../../features/loan/presentation/screens/rollover_approval_screen.dart' deferred as rollover;
+import '../../features/tickets/presentation/screens/ticket_list_screen.dart' deferred as ticket_list;
+import '../../features/tickets/presentation/screens/create_ticket_screen.dart' deferred as create_ticket;
+import '../../features/tickets/presentation/screens/ticket_detail_screen.dart' deferred as ticket_detail;
 import '../../screens/salary_deduction_consent_screen.dart' deferred as salary_consent;
 
 /// Screen loader class that handles lazy loading of all app screens
@@ -119,13 +119,13 @@ class ScreenLoader {
   /// Loads and returns the my guarantees screen
   static Future<Widget> loadMyGuaranteesScreen({required String userId}) async {
     await my_guarantees.loadLibrary();
-    return my_guarantees.MyGuaranteesScreen(userId: userId);
+    return my_guarantees.MyGuaranteesScreen();
   }
 
   /// Loads and returns the referral screen
   static Future<Widget> loadReferralScreen({required String userId}) async {
     await referral.loadLibrary();
-    return referral.ReferralScreen(userId: userId);
+    return referral.ReferralScreen(referralCode: userId);
   }
 
   /// Loads and returns the loan status screen
@@ -159,8 +159,10 @@ class ScreenLoader {
   }
 
   /// Loads and returns the salary deduction consent screen
-  static Future<Widget> loadSalaryConsentScreen() async {
+  static Future<Widget> loadSalaryConsentScreen({Map<String, dynamic>? registrationData}) async {
     await salary_consent.loadLibrary();
-    return salary_consent.SalaryDeductionConsentScreen();
+    return salary_consent.SalaryDeductionConsentScreen(
+      registrationData: registrationData ?? {},
+    );
   }
 }
