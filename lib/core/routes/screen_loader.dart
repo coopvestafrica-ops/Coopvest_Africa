@@ -18,7 +18,7 @@ import '../../wallet_screen.dart' deferred as wallet;
 // Import orphaned screens
 import '../../guarantor_loan_screen.dart' deferred as guarantor_loan;
 import '../../guarantor_scan_screen.dart' deferred as guarantor_scan;
-import '../../loan_qr_confirmation_screen.dart' deferred as loan_qr;
+import '../../features/loan/presentation/screens/loan_qr_confirmation_screen.dart' deferred as loan_qr;
 import '../../my_guarantees_screen.dart' deferred as my_guarantees;
 import '../../referral_screen.dart' deferred as referral;
 import '../../features/loan/presentation/screens/loan_status_screen.dart' deferred as loan_status;
@@ -113,7 +113,7 @@ class ScreenLoader {
   /// Loads and returns the loan QR confirmation screen
   static Future<Widget> loadLoanQrConfirmationScreen({required String loanId}) async {
     await loan_qr.loadLibrary();
-    return loan_qr.LoanQrConfirmationScreen(loanId: loanId);
+    return loan_qr.LoanQRConfirmationScreen(loanData: {'loan_id': loanId});
   }
 
   /// Loads and returns the my guarantees screen
@@ -129,15 +129,33 @@ class ScreenLoader {
   }
 
   /// Loads and returns the loan status screen
-  static Future<Widget> loadLoanStatusScreen({required String loanId}) async {
+  static Future<Widget> loadLoanStatusScreen({
+    required String loanId,
+    required double amount,
+    required int durationMonths,
+    required String purpose,
+    required DateTime applicationDate,
+  }) async {
     await loan_status.loadLibrary();
-    return loan_status.LoanStatusScreen(loanId: loanId);
+    return loan_status.LoanStatusScreen(
+      loanId: loanId,
+      amount: amount,
+      durationMonths: durationMonths,
+      purpose: purpose,
+      applicationDate: applicationDate,
+    );
   }
 
   /// Loads and returns the rollover approval screen
-  static Future<Widget> loadRolloverApprovalScreen({required String loanId}) async {
+  static Future<Widget> loadRolloverApprovalScreen({
+    required String requestId,
+    required String guarantorId,
+  }) async {
     await rollover.loadLibrary();
-    return rollover.RolloverApprovalScreen(loanId: loanId);
+    return rollover.RolloverApprovalScreen(
+      requestId: requestId,
+      guarantorId: guarantorId,
+    );
   }
 
   /// Loads and returns the ticket list screen

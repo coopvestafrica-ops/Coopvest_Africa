@@ -40,12 +40,14 @@ class AppRouteGenerator {
     // Get auth state
     final userId = authProvider.currentUser?.id ?? '';
     final isAuthenticated = authProvider.isAuthenticated;
+    final arguments = settings.arguments as Map<String, dynamic>?;
 
     // Create the screen widget based on route
     final screenWidget = _getScreenWidget(
       routeName: settings.name ?? '/',
       isAuthenticated: isAuthenticated,
       userId: userId,
+      arguments: arguments,
     );
 
     return MaterialPageRoute(
@@ -61,6 +63,7 @@ class AppRouteGenerator {
     required String routeName,
     required bool isAuthenticated,
     required String userId,
+    Map<String, dynamic>? arguments,
   }) {
     switch (routeName) {
       case AppRoutes.splash:
@@ -136,8 +139,9 @@ class AppRouteGenerator {
         );
 
       case AppRoutes.loanQrConfirmation:
+        final loanId = arguments?['loanId'] as String? ?? userId;
         return _LazyLoadScreen(
-          screenBuilder: () => ScreenLoader.loadLoanQrConfirmationScreen(loanId: userId),
+          screenBuilder: () => ScreenLoader.loadLoanQrConfirmationScreen(loanId: loanId),
           requiresAuth: true,
           isAuthenticated: isAuthenticated,
         );
@@ -157,15 +161,31 @@ class AppRouteGenerator {
         );
 
       case AppRoutes.loanStatus:
+        final loanId = arguments?['loanId'] as String? ?? userId;
+        final amount = arguments?['amount'] as double? ?? 0.0;
+        final durationMonths = arguments?['durationMonths'] as int? ?? 12;
+        final purpose = arguments?['purpose'] as String? ?? 'Loan';
+        final applicationDate = arguments?['applicationDate'] as DateTime? ?? DateTime.now();
         return _LazyLoadScreen(
-          screenBuilder: () => ScreenLoader.loadLoanStatusScreen(loanId: userId),
+          screenBuilder: () => ScreenLoader.loadLoanStatusScreen(
+            loanId: loanId,
+            amount: amount,
+            durationMonths: durationMonths,
+            purpose: purpose,
+            applicationDate: applicationDate,
+          ),
           requiresAuth: true,
           isAuthenticated: isAuthenticated,
         );
 
       case AppRoutes.rolloverApproval:
+        final requestId = arguments?['requestId'] as String? ?? userId;
+        final guarantorId = arguments?['guarantorId'] as String? ?? userId;
         return _LazyLoadScreen(
-          screenBuilder: () => ScreenLoader.loadRolloverApprovalScreen(loanId: userId),
+          screenBuilder: () => ScreenLoader.loadRolloverApprovalScreen(
+            requestId: requestId,
+            guarantorId: guarantorId,
+          ),
           requiresAuth: true,
           isAuthenticated: isAuthenticated,
         );
