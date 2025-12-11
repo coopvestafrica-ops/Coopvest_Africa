@@ -220,9 +220,11 @@ class _GuarantorLoanScreenState extends State<GuarantorLoanScreen> {
         },
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error confirming guarantee: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error confirming guarantee: $e')),
+        );
+      }
     } finally {
       setState(() {
         isLoading = false;

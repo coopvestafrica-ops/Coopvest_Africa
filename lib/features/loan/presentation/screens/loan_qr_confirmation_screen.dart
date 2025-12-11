@@ -29,13 +29,12 @@ class _LoanQRConfirmationScreenState extends State<LoanQRConfirmationScreen> {
 
   Future<void> _shareQRCode() async {
     try {
-      await SharePlus.instance.share(
+      await Share.share(
         'Coopvest Africa Loan Guarantor Request\n\n'
         'Amount: ${CurrencyFormatter.format(widget.loanData['amount'])}\n'
         'Duration: ${widget.loanData['duration']} months\n\n'
         'Scan this QR code in the Coopvest Africa app to review and approve:\n\n'
         '$encodedQRData',
-        subject: 'Loan Guarantor Request',
       );
     } catch (e) {
       if (!mounted) return;

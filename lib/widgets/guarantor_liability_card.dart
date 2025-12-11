@@ -32,10 +32,10 @@ class GuarantorLiabilityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: _getColor().withOpacity(0.05),
+      color: _getColor().withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(4),
-        side: BorderSide(color: _getColor().withOpacity(0.3)),
+        side: BorderSide(color: _getColor().withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -82,7 +82,7 @@ class GuarantorLiabilityCard extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: _getColor().withOpacity(0.3)),
+                border: Border.all(color: _getColor().withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -132,7 +132,7 @@ class GuarantorLiabilityCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: liabilityPercentage! / 100,
                   minHeight: 8,
-                  backgroundColor: _getColor().withOpacity(0.1),
+                  backgroundColor: _getColor().withValues(alpha: 0.1),
                   valueColor: AlwaysStoppedAnimation<Color>(_getColor()),
                 ),
               ),

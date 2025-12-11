@@ -116,8 +116,9 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Enter loan amount';
                       }
-                      if (double.tryParse(value) == null)
+                      if (double.tryParse(value) == null) {
                         return 'Enter a valid number';
+                      }
                       return null;
                     },
                   ),

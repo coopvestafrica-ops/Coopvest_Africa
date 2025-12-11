@@ -85,7 +85,7 @@ class GuarantorStatusBadge extends StatelessWidget {
         vertical: isSmall ? 4 : 6,
       ),
       decoration: BoxDecoration(
-        color: _getColor().withOpacity(0.1),
+        color: _getColor().withValues(alpha: 0.1),
         border: Border.all(color: _getColor()),
         borderRadius: BorderRadius.circular(isSmall ? 12 : 16),
       ),
