@@ -76,7 +76,7 @@ class DocumentSharingService {
       _logger.info('Sharing document: $documentName');
       
       // Share the file
-      await SharePlus.instance.shareXFiles(
+      await Share.shareXFiles(
         [XFile(tempFile.path)],
         text: 'Sharing $documentName',
       );

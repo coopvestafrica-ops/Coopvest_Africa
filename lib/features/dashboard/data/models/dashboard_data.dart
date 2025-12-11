@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../core/models/money.dart';
 import '../../../../core/models/transaction_type.dart';

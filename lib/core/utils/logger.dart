@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Logger {
   static final Logger _instance = Logger._internal();
   factory Logger() => _instance;

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' show pow;
+import 'package:flutter/foundation.dart';
 
 /// A manager for handling HTTP requests with retry, timeout, and error handling capabilities.
 /// 

@@ -8,9 +8,9 @@ class ValidationException extends LoanException {
 
   const ValidationException(
     super.message, {
-    String? code,
-    int? statusCode,
-  }) : super(code: code, statusCode: statusCode);
+    super.code,
+    super.statusCode,
+  });
 
   @override
   String toString() =>

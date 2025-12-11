@@ -175,9 +175,7 @@ class _SignupScreenState extends State<SignupScreen> {
           setState(() {
             _currentStep -= 1;
           });
-          return false;
         }
-        return true;
       },
       child: Scaffold(
         appBar: AppBar(
