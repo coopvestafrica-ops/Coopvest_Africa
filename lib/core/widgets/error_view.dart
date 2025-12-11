@@ -39,7 +39,7 @@ class ErrorView extends StatelessWidget {
             Text(
               error,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.error.withOpacity(0.8),
+                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.8),
                   ),
               textAlign: TextAlign.center,
             ),

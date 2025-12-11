@@ -128,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 height: size.width * 0.7,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -140,7 +140,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 height: size.width * 0.8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -162,10 +162,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                             height: 220,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withValues(alpha: 0.1),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.white.withOpacity(0.1),
+                                  color: Colors.white.withValues(alpha: 0.1),
                                   spreadRadius: 5,
                                   blurRadius: 15,
                                 ),
@@ -220,7 +220,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                                 value: _progress,
                                 backgroundColor: Colors.white24,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white.withOpacity(0.7),
+                                  Colors.white.withValues(alpha: 0.7),
                                 ),
                                 minHeight: 6,
                               ),

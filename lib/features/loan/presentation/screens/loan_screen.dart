@@ -6,7 +6,7 @@ import '../widgets/loan_form.dart';
 import '../widgets/loan_status_card.dart';
 import '../widgets/guarantor_qr_code.dart';
 import '../widgets/guarantor_approval_dialog.dart';
-import '../../domain/models/loan_application_status.dart' as app_status;
+import '../../../../core/models/loan/loan_application_status.dart';
 import '../../../../core/config/loan_config.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/loading_overlay.dart';
@@ -336,7 +336,7 @@ class _LoanScreenState extends State<LoanScreen> {
       ),
       body: Consumer<LoanState>(
         builder: (context, loanState, _) {
-          final bool showQr = loanState.status != app_status.LoanApplicationStatus.initial;
+          final bool showQr = loanState.status != LoanApplicationStatus.initial;
           final bool isLoading = loanState.isLoading;
 
           if (loanState.errorMessage != null) {
@@ -357,7 +357,7 @@ class _LoanScreenState extends State<LoanScreen> {
 
           return LoadingOverlay(
             isLoading: isLoading,
-            message: loanState.status == app_status.LoanApplicationStatus.submitting 
+            message: loanState.status == LoanApplicationStatus.submitting 
               ? 'Submitting your loan application...'
               : 'Processing your request...',
             child: SingleChildScrollView(

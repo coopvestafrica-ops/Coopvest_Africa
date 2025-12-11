@@ -307,7 +307,7 @@ class _ResponseBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: isStaff
               ? Colors.grey[300]
-              : Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(

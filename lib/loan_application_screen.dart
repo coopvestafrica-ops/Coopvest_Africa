@@ -113,8 +113,9 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Enter loan amount';
+                      }
                       if (double.tryParse(value) == null)
                         return 'Enter a valid number';
                       return null;
@@ -137,8 +138,9 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Enter purpose';
+                      }
                       return null;
                     },
                   ),

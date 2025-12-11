@@ -24,13 +24,13 @@ class Logger {
     final logMessage = '$timestamp [$level] $message';
 
     if (data != null) {
-      print('$logMessage\nData: $data');
+      debugPrint('$logMessage\nData: $data');
     } else {
-      print(logMessage);
+      debugPrint(logMessage);
     }
 
     if (stackTrace != null) {
-      print('StackTrace:\n$stackTrace');
+      debugPrint('StackTrace:\n$stackTrace');
     }
   }
 }

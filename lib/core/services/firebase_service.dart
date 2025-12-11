@@ -82,7 +82,7 @@ class FirebaseService {
             stderr.writeln('\x1B[33m$logMessage\x1B[0m'); // Yellow for warnings
             break;
           default:
-            print(logMessage);
+            debugPrint(logMessage);
             break;
         }
       });

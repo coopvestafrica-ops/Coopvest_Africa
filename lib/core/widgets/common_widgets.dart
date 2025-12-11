@@ -210,7 +210,7 @@ class CoopvestEmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 64, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+            Icon(icon, size: 64, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
             const SizedBox(height: 24),
             Text(message, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
             if (onActionPressed != null && actionLabel != null) ...[

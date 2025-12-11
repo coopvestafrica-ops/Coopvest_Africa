@@ -63,7 +63,7 @@ class DashboardNotificationService {
     } catch (e) {
       _isInitialized = false;
       _permissionsGranted = false;
-      print('Failed to initialize notifications: $e');
+      debugPrint('Failed to initialize notifications: $e');
       // You might want to report this to an error tracking service
     }
   }
@@ -82,7 +82,7 @@ class DashboardNotificationService {
     try {
       await _ensureInitialized();
       if (!_isInitialized || !_permissionsGranted) {
-        print('Notifications not initialized or permissions not granted');
+        debugPrint('Notifications not initialized or permissions not granted');
         return false;
       }
 
@@ -130,7 +130,7 @@ class DashboardNotificationService {
       }
       return false;
     } catch (e) {
-      print('Failed to show balance update notification: $e');
+      debugPrint('Failed to show balance update notification: $e');
       return false;
     }
   }

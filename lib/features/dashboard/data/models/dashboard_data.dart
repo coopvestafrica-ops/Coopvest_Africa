@@ -159,7 +159,7 @@ class DashboardData extends Equatable {
 
       // Basic data validation
       if (recentTransactions.length > 100) {
-        print('Too many recent transactions');
+        debugPrint('Too many recent transactions');
         return false;
       }
 
@@ -183,7 +183,7 @@ class DashboardData extends Equatable {
 
       return true;
     } catch (e) {
-      print('Validation error: $e');
+      debugPrint('Validation error: $e');
       return false;
     }
   }

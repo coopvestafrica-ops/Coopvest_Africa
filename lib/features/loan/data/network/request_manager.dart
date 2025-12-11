@@ -60,7 +60,7 @@ class RequestManager {
           exceptions.any((type) => error.runtimeType == type)) {
         // Calculate delay with exponential backoff (2^retry * base delay)
         final delay = retryDelay * pow(2, currentRetry);
-        print('Request failed with ${error.runtimeType}. Retrying in ${delay.inSeconds}s...');
+        debugPrint('Request failed with ${error.runtimeType}. Retrying in ${delay.inSeconds}s...');
         
         await Future.delayed(delay);
         return retry(

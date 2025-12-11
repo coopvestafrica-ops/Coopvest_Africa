@@ -29,7 +29,7 @@ class PermissionGate extends StatelessWidget {
 
   /// Creates a permission gate that checks for user permissions before rendering its child.
   ///
-  /// [requiredPermissions] can be either a single String permission or a List<String> of permissions.
+  /// [requiredPermissions] can be either a single String permission or a List of String permissions.
   /// [child] is the widget to show when permissions are granted.
   /// [requireAll] determines if all permissions are needed (true) or any permission is sufficient (false).
   /// [fallbackWidget] is shown when permissions are denied.

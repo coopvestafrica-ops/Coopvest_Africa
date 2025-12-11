@@ -92,11 +92,11 @@ class _DocumentUploadWidgetState extends State<DocumentUploadWidget> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             border: Border.all(
-              color: Colors.blue.withOpacity(0.3),
+              color: Colors.blue.withValues(alpha: 0.3),
               style: BorderStyle.solid,
             ),
             borderRadius: BorderRadius.circular(8),
-            color: Colors.blue.withOpacity(0.05),
+            color: Colors.blue.withValues(alpha: 0.05),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

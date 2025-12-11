@@ -29,7 +29,7 @@ class _LoanQRConfirmationScreenState extends State<LoanQRConfirmationScreen> {
 
   Future<void> _shareQRCode() async {
     try {
-      await Share.share(
+      await SharePlus.instance.share(
         'Coopvest Africa Loan Guarantor Request\n\n'
         'Amount: ${CurrencyFormatter.format(widget.loanData['amount'])}\n'
         'Duration: ${widget.loanData['duration']} months\n\n'

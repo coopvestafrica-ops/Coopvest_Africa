@@ -6,7 +6,7 @@ import '../../core/constants/text_styles.dart';
 /// Displays all typography styles defined in the unified typography system.
 /// Use this widget for design review and documentation purposes.
 class TypographyShowcase extends StatelessWidget {
-  const TypographyShowcase({Key? key}) : super(key: key);
+  const TypographyShowcase({super.key});
 
   @override
   Widget build(BuildContext context) {
