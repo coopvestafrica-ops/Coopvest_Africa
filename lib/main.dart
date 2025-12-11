@@ -217,7 +217,7 @@ class CoopvestApp extends StatelessWidget {
           // Prevent text scaling beyond 1.2
           data: MediaQuery.of(context).copyWith(
             textScaler: TextScaler.linear(
-              clampDouble(MediaQuery.of(context).textScaleFactor, 0.8, 1.2),
+              clampDouble(MediaQuery.of(context).textScaler.textScaleFactor, 0.8, 1.2),
             ),
           ),
           child: child!,

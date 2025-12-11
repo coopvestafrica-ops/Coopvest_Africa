@@ -3,8 +3,6 @@ import 'loan_exception.dart';
 
 @immutable
 class ValidationException extends LoanException {
-  @override
-  final String? code;
 
   const ValidationException(
     super.message, {
