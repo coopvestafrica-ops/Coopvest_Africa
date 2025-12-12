@@ -1,56 +1,35 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+
+# General
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+.idea
+.vscode
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Flutter
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+build/
 
-# Symbolication related
-app.*.symbols
+# Android
+/android/app/src/main/assets/flutter_assets/app.dill
+/android/app/src/main/assets/flutter_assets/kernel_blob.bin
+/android/app/src/main/assets/flutter_assets/isolate_snapshot_data
+/android/app/src/main/assets/flutter_assets/vm_snapshot_data
+/android/app/src/main/assets/flutter_assets/FontManifest.json
+/android/app/src/main/assets/flutter_assets/AssetManifest.json
+/android/app/src/main/assets/flutter_assets/LICENSE
+/android/app/src/main/assets/flutter_assets/packages/
 
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Gradle reports and build artifacts
-build/reports/
-**/build/reports/
-
-# Android Signing (Security)
-android/app/keystore.properties
-android/app/*.jks
-android/app/*.keystore
-android/*.jks
-android/*.keystore
+# iOS
+/ios/Flutter/App.framework/App
+/ios/Flutter/engine/Flutter.framework/Flutter
+/ios/Flutter/flutter_assets/app.dill
+/ios/Flutter/flutter_assets/kernel_blob.bin
+/ios/Flutter/flutter_assets/isolate_snapshot_data
+/ios/Flutter/flutter_assets/vm_snapshot_data
+/ios/Flutter/flutter_assets/FontManifest.json
+/ios/Flutter/flutter_assets/AssetManifest.json
+/ios/Flutter/flutter_assets/LICENSE
+/ios/Flutter/flutter_assets/packages/
