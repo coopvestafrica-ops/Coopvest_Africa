@@ -1,0 +1,118 @@
+import '../../../core/services/api_service.dart';
+import '../../../core/config/api_config.dart';
+import '../models/user.dart';
+
+class AuthApiService {
+  final ApiService _apiService;
+
+  AuthApiService(this._apiService);
+
+  Future<User> login({
+    required String email,
+    required String password,
+    required Map<String, dynamic> deviceInfo,
+  }) async {
+    return await _apiService.post(
+      ApiConfig.login,
+      {
+        'email': email,
+        'password': password,
+        'deviceInfo': deviceInfo,
+      },
+      User.fromMap,
+    );
+  }
+
+  Future<void> register({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String phoneNumber,
+    String? referralCode,
+  }) async {
+    return await _apiService.post(
+      ApiConfig.register,
+      {
+        'email': email,
+        'password': password,
+        'firstName': firstName,
+        'lastName': lastName,
+        'phoneNumber': phoneNumber,
+        if (referralCode != null) 'referralCode': referralCode,
+      },
+      (json) => null,
+    );
+  }
+
+  Future<void> verifyEmail(String code) async {
+    return await _apiService.post(
+      ApiConfig.verifyEmail,
+      {'code': code},
+      (json) => null,
+    );
+  }
+
+  Future<void> verifyPhone(String code) async {
+    return await _apiService.post(
+      ApiConfig.verifyPhone,
+      {'code': code},
+      (json) => null,
+    );
+  }
+
+  Future<void> resetPassword(String email) async {
+    return await _apiService.post(
+      ApiConfig.resetPassword,
+      {'email': email},
+      (json) => null,
+    );
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    return await _apiService.post(
+      ApiConfig.changePassword,
+      {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      },
+      (json) => null,
+    );
+  }
+
+  Future<User> getUserProfile() async {
+    return await _apiService.get(
+      ApiConfig.userProfile,
+      User.fromMap,
+    );
+  }
+
+  Future<User> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? avatarUrl,
+  }) async {
+    return await _apiService.put(
+      ApiConfig.updateProfile,
+      {
+        if (firstName != null) 'firstName': firstName,
+        if (lastName != null) 'lastName': lastName,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
+        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+      },
+      User.fromMap,
+    );
+  }
+
+  Future<void> logout() async {
+    return await _apiService.post(
+      ApiConfig.logout,
+      null,
+      (json) => null,
+    );
+  }
+}
